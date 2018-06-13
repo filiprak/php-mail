@@ -37,12 +37,16 @@ if (!isset($req_data['to']) || !isset($req_data['subject']) || !isset($req_data[
 $to = $req_data['to'];
 $subject = $req_data['subject'];
 $message = $req_data['message'];
-//$headers = $req_data['headers'];
+$headers = $req_data['headers'];
 
-$headers = 'From: filiprak@filiprak.com' . "\r\n" .
-    'Reply-To: filiprak@filiprak.com' . "\r\n" .
-    'X-Mailer: PHP/' . phpversion();
+if (isset($req_data['headers']) && !is_array($headers)) {
+    response_error("Invalid 'headers' format: expected array of strings", 400);
+}
 
+if (!is_array($headers)) {
+    $headers = array();
+}
+$headers[] = 'X-Mailer: PHP/' . phpversion();
 
 // Validate data
 
@@ -50,7 +54,7 @@ if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
     response_error("Invalid email format in 'to' attribute", 400);
 }
 
-if(!mail($to, $subject, $message)) {
+if(!mail($to, $subject, $message, implode("\r\n", $headers))) {
     response_error("Failed to sent email", 503);
 } else {
     response_json([ 'message' => 'Email was sent' ], 200);
